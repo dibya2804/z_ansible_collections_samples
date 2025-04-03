@@ -1,0 +1,16 @@
+- name: deploy a vm
+  hosts: localhost
+  tasks:
+    - name: Deploy tst VM
+      openstack.cloud.server:
+        ca_cert: /etc/pki/tls/certs/icic.crt
+        cloud: devstack
+        name: test-ansible-vm
+        state: present
+        image: rhel92_KVM
+        flavor: tiny
+        volume_size: 20
+        validate_certs: false
+        network: KVM_flat
+        timeout: 600
+      register: deploy_vm

@@ -1,0 +1,103 @@
+# =================================================================
+# Licensed Materials - Property of IBM
+#
+# (c) Copyright IBM Corp. 2021 All Rights Reserved
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+# =================================================================
+---
+- name: Install & Approve Compute OCP Nodes
+  hosts: localhost
+  vars:
+    icic_cert: /etc/pki/tls/certs/icic.crt
+  environment:
+    OS_CLOUD: devstack
+    OS_CACERT: /etc/pki/tls/certs/icic.crt
+  tasks: 
+
+    
+    - name: Configure compute-nodes zvm
+      ansible.builtin.include_role: 
+        name: configure-compute-nodes-zvm
+      when: vm_type == "zvm"
+
+    - name: Configure compute-nodes kvm
+      ansible.builtin.include_role: 
+        name: configure-compute-nodes-kvm
+      when: vm_type == "kvm"
+
+## Added from approve.yml
+    - name: Re-Download openshift installer client to EE
+      ansible.builtin.include_role: 
+        name: configure-installer-client
+      when: use_localreg == false
+
+    - name: Re-Download openshift installer client to EE
+      ansible.builtin.include_role: 
+        name: configure-installer-client-local
+      when: use_localreg == true
+    
+    - name: 'Add DNS {{os_dns_domain}} api.{{ cluster_name }}.{{base_domain}} to /etc/hosts'
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        insertafter: EOF
+        line: '{{os_dns_domain}} api.{{ cluster_name }}.{{base_domain}}'
+    
+    - name: Approving the worker CSR
+      block:
+        - name: Approve CSR in loop
+          environment:
+            KUBECONFIG: "/tmp/ocp-install-files/auth/auth/kubeconfig"
+          ansible.builtin.shell: |
+            ./oc get csr -o name | xargs ./oc adm certificate approve &> /dev/null
+            echo $(./oc get nodes |grep 'worker-'|wc -l)
+          register: csr_worker
+          until: csr_worker.stdout | int == {{ os_compute_nodes_number }}
+          retries: 30
+          delay: 10
+      rescue:
+        - name: Approve CSR failed
+          ansible.builtin.debug:
+            msg: 'Please approve all pending CSR manually via: oc get csr -o name | xargs oc adm certificate approve'
+
+    - name: OC path to configs.imageregistry.operator.openshift.io/cluster
+      ansible.builtin.command: ./oc patch configs.imageregistry.operator.openshift.io/cluster --type merge --patch '{"spec":{"storage":{"emptyDir":{}}}}'
+      environment:
+        KUBECONFIG: "/tmp/ocp-install-files/auth/auth/kubeconfig"
+      retries: 100
+      delay: 10
+      register: result
+      until: result is not failed
+
+    - name: Wait-for install-complete
+      ansible.builtin.command: "./openshift-install --dir /tmp/ocp-install-files/auth/ wait-for install-complete"
+      async: 3600
+      poll: 0
+      register: install_complete_sleeper
+
+    - name: 'Waiting for install-complete'
+      ansible.builtin.async_status:
+        jid: "{{ install_complete_sleeper.ansible_job_id }}"
+      register: job_result
+      until: job_result.finished
+      retries: 120
+      delay: 30
+
+    - name: Check openshift web-console and kubeadmin-password
+      ansible.builtin.shell: 'cat /tmp/ocp-install-files/auth/.openshift_install.log  | grep -A10 "Install complete"'
+      register: webconsole
+
+    - name: Show openshift web-console and kubeadmin-password
+      ansible.builtin.debug:
+        var: webconsole.stdout_lines
+
+
+
+## Below will need to be restructured
+    #- name: Wait for Install to complete
+      #ansible.builtin.import_tasks:
+        #file: wait-for-install-complete.yaml
+
+#- import_playbook: approve.yaml
+#- import_playbook: wait-for-install-complete.yaml

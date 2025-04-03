@@ -1,0 +1,110 @@
+# =================================================================
+# Copyright 2021 https://github.com/openshift/installer
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# =================================================================
+
+# =================================================================
+# Licensed Materials - Property of IBM
+#
+# (c) Copyright IBM Corp. 2023 All Rights Reserved
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+# =================================================================
+#
+# Change Summary:
+# - Add bastion host
+# - Add auto allocated ip
+# - Modify items and delete unnecessary Ansible items
+
+all:
+  hosts:
+    localhost:
+      ansible_connection: local
+      ansible_python_interpreter: "{{ansible_playbook_python}}"
+
+      # use_network_name: '<network-name-from-icic>'
+      use_network_name: 'ZVM_flat'
+      # use_network_subnet: '<subnet-id-from-network-name-in-icic>'
+      # use_network_subnet: '44576301-78d5-4f5d-ab38-1a061296a836'
+      use_network_subnet: 'c5e68f2e-a993-459d-b0b8-ba42603a2172'
+      #use_network_subnet: 'f4c99cef-e0fe-4159-89f2-35a307f10234'
+      vm_type: 'zvm'
+      disk_type: 'dasd'
+      # volume_type_id: '<storage-template-id>'
+                   
+      openshift_version: '4.18'
+      openshift_minor_version: 'latest'
+
+      auto_allocated_ip: true
+      # allocation_pool_start: '<ip range start>'
+      # allocation_pool_end: '<ip range end>'
+      os_flavor_bootstrap: 'medium'
+      os_flavor_master: 'medium'
+      os_flavor_worker: 'medium'
+     
+      #create_server_zone: ''
+      os_control_nodes_number: 3
+      os_compute_nodes_number: 3
+
+      # os_bootstrap_ip: '<bootstrap ip addr>'
+      # os_master_ip: ['<master0 ip addr>', '<master1 ip addr>', '<master2 ip addr>']
+      # os_infra_ip: ['<infra0 ip addr>', '<infra1 ip addr>', '<infra2 ip addr>']
+
+      use_proxy: false
+      # http_proxy: '<http-proxy>'
+      # https_proxy: '<https-proxy>'
+      # no_proxy: '<no-proxy>'
+
+      use_localreg: false
+      # localreg_mirror: "<local-mirror-registry>"
+
+      # local_openshift_install: '<local-openshift-install-url>'
+      # local_openshift_client: '<local-openshift-client-url>'
+      # local_rhcos_image: '<local-rhcos-image-url>'
+
+      # additional_certs: "{{ lookup('file', '/opt/registry/certs/domain.crt') | indent (width=2) }}"
+      
+      create_server_zone: Default_Group
+
+
+      create_server_timeout: 10 # minute
+
+    bastion:
+      # ansible_ssh_host: '<linux-server-ip-addr>'
+      ansible_ssh_host: '172.26.3.19' 
+      ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+      # bastion_private_ip_address: '<bastion-ip-addr>'
+      bastion_private_ip_address: '172.26.3.19'
+      bastion_public_ip_address: "{{ ansible_default_ipv4.address }}"
+      # dns_forwarder: '<upstream-dns-ip-addr>'
+      dns_forwarder: '172.26.0.1'
+
+  vars:
+    use_internal_bastion: true
+    # os_dns_domain: '<external-dns-ip-addr>'
+    os_dns_domain: '172.26.3.19' 
+    # cluster_name: '<cluster-name>'
+    cluster_name: 'dvicic'
+    # base_domain: '<cluster-base-domain>'
+    base_domain: 'ocp.com'
+    # bootstrap_name_prefix: '<bootstrap-node-name>'
+    # master_name_prefix: '<master-node-name>'
+    # worker_name_prefix: '<worker-node-name>'
+    # pullsecret: '<pull-secret>'
+    ###pullsecret: '{"auths":{"cloud.openshift.com":{"auth":"b3BlbnNoaWZ0LXJlbGVhc2UtZGV2K29jbV9hY2Nlc3NfYzc0ZmFlZGZlMjczNGNhZmE2OTgwZDhhYTUxZmQxNjQ6QlRKQVhWMlRKRTIyTExNMTg3MldDSkpEQ1JZS1ZLTlGRTEzU1BQN1FZRFlSUE1INjJaWDA4WlRYUFJUVEdFUw==","email":"dibya.raj@ibm.com"},"quay.io":{"auth":"b3BlbnNoaWZ0LXJlbGVhc2UtZGV2K29jbV9hY2Nlc3NfYzc0ZmFlZGZlMjczNGNhZmE2OTgwZDhhYTUxZmQxNjQ6QlRKQVhWMlRKRTIyTExNMTg3MldDSkpEQ1JZS1ZLTlGRTEzU1BQN1FZRFlSUE1INjJaWDA4WlRYUFJUVEdFUw==","email":"dibya.raj@ibm.com"},"registry.connect.redhat.com":{"auth":"fHVoYy1wb29sLTNiMDE2YWJkLWU1YmYtNGMxZC05YTJiLTE3OTQwOGM3OGQyMjpleUpoYkdjaU9pSlNVelV4TWlKOS5leUp6ZFdJaU9pSmlPREpqWVROaVpHSTJZakETTJFNVltSXhOR05rTnpFMVltWXhOek0zTlNKOS52TGx4WUVsQlpfZ0FZMVpQNGt1dS13TGNOSXRuLUs1QTdSVzZHcC1ldE1PazFmV19wUEdScDhXdDR6WnhxZkdjNUlTSW5fQmpbUoyLU56dndVZWdEVTFrenhzaXNKb2xDeU1pSFFhRVJRQ053MVJLUjF2RVk0Tjk3cGl1eUV3ZXNXWTZEelVQWVJCUGhMRTNuNHRScEVPRERFQmpvZlpqWmRETDdUT2RhdG1WQ01NaFlVbzB3Y3ZpaG1PV1RRMU5ic3Q2ajZ2NW5nN3E5TERrUUxodkY2ZGlJZUJlbHJCd0RfOFBUUDQwZUtsZTFHQTdlY1NENEdIdjM4dDRab2VPaUFSa2I3Sk5ZVV94LTd0WkxMcWhPcHBnWlNsbXBST1dLdERHdmxSQWlvSHBfUHFnaDJibzZsN0NwWFg4cVVhb1RZMDJfMGR6LUlYS2xSM0xScE5HbGFWc3hHcTZTZEQ0aVE3QmYwWHVtNnVraXNHNmM2ZWVMWkxyT2xIZWxtTjZzQ3FLOGVFUkExT0FGWG9RVC11aGh3eFRmaFRjbFozc3I3RnNXeFhFeHEyUWpsRmVwYzJJN1M2ZlF4WWlfVEUwTzhyamtjeURjWHpTVDhJMFFHcng4Smt5bGU5bDd0OGJidEZsVm43c1RSSkVpeHlGOGxyOXFBRzA1a2s0V1E4V1hiUVhPYmlKVnk3MTZIdkg0OU80NGxlRDZtbGswNEZMOUhHYkZVTEhPMGhyUUtNSHpobDBvYURzYmc4TGdVMVl6WlJ1UG5JQVVZTjN6c2l5QmxSd0JmTzhlUlpPaVZNRWw1X2RXYUp0SjBVWlV1aVVoeTNNREdCOEFVVGVSemsyR0JkaWx6LXJfVFhsUEtOT1ExV0NNdzUyWU1BQlI5UjFjVjRmY1ptSmNwRQ==","email":"dibya.raj@ibm.com"},"registry.redhat.io":{"auth":"fHVoYy1wb29sLTNiMDE2YWJkLWU1YmYtNGMxZC05YTJiLTE3OTQwOGM3OGQyMjpleUpoYkdjaU9pSlNVelV4TWlKOS5leUp6ZFdJaU9pSmlPREpqWVROaVpHSTJZakEwTTJFNVltSXhOR05rTnpFMVltWXhOek0zTlNKOS52TGx4WUVsQlpfZ0FZMVpQNGt1dS13TGNOSXRuLUs1QTdSVzZHcC1ldE1PazFmV19wUEdScDhXdDR6WnhxZkdjNUlTSW5fQmRpbUoyLU56dndVZWdEVTFrenhzaXNKb2xDeU1pSFFhRVJRQ053MVJLUjF2RVk0Tjk3cGl1eUV3ZXNXWTZEelVQWVJCUGhMRTNuNHRScEVPRERFQmpvZlpqWmRETDdUT2RhdG1WQ01NaFlVbzB3Y3ZpaG1PV1RRMU5ic3Q2ajZ2NW5nN3E5TERrUUxodkY2ZGlJZUJlbHJCd0RfOFBUUDQwZUtsZTFHQTdlY1NENEdIdjM4dDRab2VPaUFSa2I3Sk5ZVV94LTd0WkxMcWhPcHBnWlNsbXBST1dLdERHdmxSQWlvSHBfUHFnaDJibzZsN0NwWFg4cVVhb1RZMDJfMGR6LUlYS2xSM0xScE5HbGFWc3hHcTZTZEQ0aVE3QmYwWHVtNnVraXNHNmM2ZWVMWkxyT2xIZWxtTjZzQ3FLOGVFUkExT0FGWG9RVC11aGh3eFRmaFRjbFozc3I3RnNXeFhFeHEyUWpsRmVwYzJJN1M2ZlF4WWlfVEUwTzhyamtjeURjWHpTVDhJMFFHcng4Smt5bGU5bDd0OGJidEZsVm43c1RSSkVpeHlGOGxyOXFBRzA1a2s0V1E4V1hiUVhPYmlKVnk3MTZIdkg0OU80NGxlRDZtbGswNEZMOUhHYkZVTEhPMGhyUUtNSHpobDBvYURzYmc4TGdVMVl6WlJ1UG5JQVVZTjN6c2l5QmxSd0JmTzhlUlpPaVZNRWw1X2RXYUp0SjBVWlV1aVVoeTNNREdCOEFVVGVSemsyR0JkaWx6LXJfVFhsUEtOT1ExV0NNdzUyWU1BQlI5UjFjVjRmY1ptSmNwRQ==","email":"dibya.raj@ibm.com"}}}'
+    pullsecret: '{"auths":{"cloud.openshift.com":{"auth":"b3BlbnNoaWZ0LXJlbGVhc2UtZGV2K29jbV9hY2Nlc3NfMGYxOTlmOWNkNzQ4NDYyNmExMmIwM2Y3MzZkNDNmZmI6VzhXWEtXTVdOWURMR1VOUFhHNFhNQ0k0WDNXMEpIOE9RWE9CV0g2UElZTVhGWThBVlNYM0VTSDlYWTg2MDhDWQ==","email":"paul.stefos@ibm.com"},"quay.io":{"auth":"b3BlbnNoaWZ0LXJlbGVhc2UtZGV2K29jbV9hY2Nlc3NfMGYxOTlmOWNkNzQ4NDYyNmExMmIwM2Y3MzZkNDNmZmI6VzhXWEtXTVdOWURMR1VOUFhHNFhNQ0k0WDNXMEpIOE9RWE9CV0g2UElZTVhGWThBVlNYM0VTSDlYWTg2MDhDWQ==","email":"paul.stefos@ibm.com"},"registry.connect.redhat.com":{"auth":"fHVoYy1wb29sLWM5NzMwNWJkLTdmNTUtNGJhMy05ZDZhLTg3MjEyZjQ3MDVmNzpleUpoYkdjaU9pSlNVelV4TWlKOS5leUp6ZFdJaU9pSTBNR1JqTW1Oa09HSmhPRFEwWW1OaE9UWXdabVUzWldVek9UYzFaakkyTUNKOS5BZEMwTGx3eDdpMlhxd0VPMTdiMXVoWnJRb1RLRm9wUkkwOGZYb0c1dWZVRG5hT3VqdHliSktiWVJsTWVGVHJ5WjdxY3dCX1JFcWVzWERTNkdLNS1BNUpjanM2NUVaY1dzWml4dDY2U25tTERvZDI5eW82emRyRHdFbGpfeU5CZDd5akhsU3JxSVk0SGlJdWQtRjhJOC02cE9xWkh2Tm5LdkNKTGZkdGZIYXk4RmhZdEFxQ1hUOUsxdFdobU9PeHRWMDhlb2YyRlByazJlUzA0VF9MZlU0NEs4Zm9odXBkR0VXcjd6T0hqYWIzV2V3RlJxMndMUGhfaWRuYVBfWXlqdlhvVUtCOGdtTktyRGlOaFVOS09QNUg4RUpPYW1HRjQtZjBwWFRIRHBlUWczN1lUOEVJNUdkSHQ5ckROYmdqRFV0SWxYcVZ6MHNtLVBrZVJpUkQzRFZ2ZnJDaERCU1dpVVFnXzFhWkxpclc0c21qZWNWM19uMFN6c1E4dHpqazVUV3RqT0VlQmxELVlXMktCQWFfcUpCTTVDaDFFTDd6VnNyazBSbDVtUGczV3VxZV9Zak03VDVRTGh0MVktZWRRWHVGQ2wwSzZrMTBPc3JJNzF1bmxnNldJYTlyRzFtTzFHblVDVlFjZ25IcVJqTE1jMUI4ZnhybF82S3J6aENpZHYzUDdQX1BuOXQ2MXdETnVvbEF3YWQ4TkRRS1FRRlUzTFNXNEgtc1NWd1NtRURqWVJYOUgwWGRMa09MNlBJc2pQUEc5UEdmNVVJc3NwNmdIVUh0VFYxdDBLR3V6aGRER3U5T0l4bGZRSXFya0xabnIwS0Q5TFYzY2w2UFlacko1eHVQQ3hRRU5yeVRlOGg3VGVSenBFbkNvZXgzMUhYQl82X1dGN1BPRWVTTQ==","email":"paul.stefos@ibm.com"},"registry.redhat.io":{"auth":"fHVoYy1wb29sLWM5NzMwNWJkLTdmNTUtNGJhMy05ZDZhLTg3MjEyZjQ3MDVmNzpleUpoYkdjaU9pSlNVelV4TWlKOS5leUp6ZFdJaU9pSTBNR1JqTW1Oa09HSmhPRFEwWW1OaE9UWXdabVUzWldVek9UYzFaakkyTUNKOS5BZEMwTGx3eDdpMlhxd0VPMTdiMXVoWnJRb1RLRm9wUkkwOGZYb0c1dWZVRG5hT3VqdHliSktiWVJsTWVGVHJ5WjdxY3dCX1JFcWVzWERTNkdLNS1BNUpjanM2NUVaY1dzWml4dDY2U25tTERvZDI5eW82emRyRHdFbGpfeU5CZDd5akhsU3JxSVk0SGlJdWQtRjhJOC02cE9xWkh2Tm5LdkNKTGZkdGZIYXk4RmhZdEFxQ1hUOUsxdFdobU9PeHRWMDhlb2YyRlByazJlUzA0VF9MZlU0NEs4Zm9odXBkR0VXcjd6T0hqYWIzV2V3RlJxMndMUGhfaWRuYVBfWXlqdlhvVUtCOGdtTktyRGlOaFVOS09QNUg4RUpPYW1HRjQtZjBwWFRIRHBlUWczN1lUOEVJNUdkSHQ5ckROYmdqRFV0SWxYcVZ6MHNtLVBrZVJpUkQzRFZ2ZnJDaERCU1dpVVFnXzFhWkxpclc0c21qZWNWM19uMFN6c1E4dHpqazVUV3RqT0VlQmxELVlXMktCQWFfcUpCTTVDaDFFTDd6VnNyazBSbDVtUGczV3VxZV9Zak03VDVRTGh0MVktZWRRWHVGQ2wwSzZrMTBPc3JJNzF1bmxnNldJYTlyRzFtTzFHblVDVlFjZ25IcVJqTE1jMUI4ZnhybF82S3J6aENpZHYzUDdQX1BuOXQ2MXdETnVvbEF3YWQ4TkRRS1FRRlUzTFNXNEgtc1NWd1NtRURqWVJYOUgwWGRMa09MNlBJc2pQUEc5UEdmNVVJc3NwNmdIVUh0VFYxdDBLR3V6aGRER3U5T0l4bGZRSXFya0xabnIwS0Q5TFYzY2w2UFlacko1eHVQQ3hRRU5yeVRlOGg3VGVSenBFbkNvZXgzMUhYQl82X1dGN1BPRWVTTQ==","email":"paul.stefos@ibm.com"}}}'
+    sshkey: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDujpO6/ElSed+DgpCTIxj6xyo7Lf2XZS7GLgbFoyXfmUMlKDx7aVZKOGMoUm6+KfhDS4z1nhK1fyi6wCNP3gg80yfAmUX2th2cw+Hl+oBJ1ShC4Bbofl9cf4J0JdVuDGbGnWmIuuYMQXHpn0yuqvvZQyYpFg/0H31DvkD3MzV6US3yQngjCEaeX7W2pYrIeKo48KWHF6A6vB6dPYYRAMlsz02gwxKajrG1lhVCQxsIm8Luxh2uSaYfrpORxaEvI+j/WLzeN6zHQ8xff/rrZBy/xiOCMnrl9QAu0sS5k2d9l4t19iiAMwsqkS9oB8XIj4H8DwiGk0eLqzfujemyxYpaGmQfAJJvcBtY2UvwgVUNI0sG33T7vWyUIzJtomfb6E0XSQorFjjqhyg3myhVoPy80e52wPnF1kRmHbWiW9iGRNSxCDFKIIHeC5cV70Dhd9b7x6LlfhoI+6WVvlirxrSr2zjNmDVPxVXTeW0R7qlluxVZ+BtJJWXmhZG+L9SK4Lk= root@m5409041c'
+    # sshkey: '<ssh-key>'
+    #sshkey: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDUV9kO9JcDW4NYa+RUiSIu0IYPq52hhH+qeXclgWdTCJQIgNKfVHsxUzgiu7MXm2pBTLXxE5UJ+1WMPd9VVP5EqlON3jHJTqXudU6JIeZ38D/rl5LIr0B4dHvANEpVAdKNQQcxEFZidvJp/hBcK8vAo5Tw/AMKZEdYI11Cjw/LzNfnE8fc+TKquev4ccEIYu7VnImH7JJaCw7MIftygxjTrjcwDhkH6WQiMhF9agWvGuMl1Nc0KdMmvLnc3yq+W/E9R8c3+qroJnZIWiprrSVQ5zosdf09N5i4hQvtJ4ZLxLiu8qs8nj4KvgKN4s3P4QvbXpI5IYkrfyfotRO190GpBBZfEa1XSj/8U7rcZFaOneZ9vxKSejVxKtqqAFe7ILOqDRKMUC+qRtzMa0sZnNJF36lTAIZBj3YctRynUk0EuXtJQ3htLqtDAP1y3F924/RR01L/v2B+bPGUlM4rh+595vUzw0lOUSozBHgCZCf5jQg9CRpzkLIHkiaqcvfUUSo6mYEi6wlpueAPSljT/azC4sPOnsYcepfMosC0hPD8TIaMLXF85XfFXzRNb9ffjI+pFP9y1JNHIy733EuhnlHCqPR7GI1McCZq5j491h2LY9H5L+UMnQ87qcXJL91+MXPRf3pGj2hTNNjq6uxsaa8gPamL1k9WnapL3hD4tatKzw== root@m5409042c'

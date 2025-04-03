@@ -1,0 +1,35 @@
+# =================================================================
+# Licensed Materials - Property of IBM
+#
+# (c) Copyright IBM Corp. 2021 All Rights Reserved
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+# =================================================================
+
+---
+- import_playbook: configure-dns.yaml
+- import_playbook: configure-haproxy.yaml
+
+- name: 'Configure DHCP'
+  hosts: localhost
+  tasks:
+    - name: 'Get Network physical_network'
+      ansible.builtin.shell:
+        cmd: "openstack network show -c provider:physical_network -f value {{ use_network_name }}"
+      register: physical_network_out
+      environment:
+        OS_CLOUD: devstack
+        OS_CACERT: /etc/pki/tls/certs/icic.crt
+
+    - name: Set fact physical_network
+      ansible.builtin.set_fact:
+        physical_network: "{{ physical_network_out.stdout }}"
+
+- name: 'Configure DHCP on bastion'
+  hosts: bastion
+  tasks:
+    - name: 'Get Network physical_network'
+      include_role:
+        name: configure-dhcp
+      when: hostvars['localhost']['physical_network'] == "macvtap0"
