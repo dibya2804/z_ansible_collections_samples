@@ -4,7 +4,7 @@ clouds:
       #auth_url: https://172.26.3.74:5000/v3
       auth_url: https://quality-ssi001:5000/v3
       domain_name: Default
-      password: dfltpass
+      password: <password>
       project_domain_name: Default
       project_name: ibm-default
       username: root
