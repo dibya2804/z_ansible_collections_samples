@@ -1,0 +1,106 @@
+# =================================================================
+# Copyright 2021 https://github.com/openshift/installer
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# =================================================================
+
+# =================================================================
+# Licensed Materials - Property of IBM
+#
+# (c) Copyright IBM Corp. 2023 All Rights Reserved
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+# =================================================================
+#
+# Change Summary:
+# - Add bastion host
+# - Add auto allocated ip
+# - Modify items and delete unnecessary Ansible items
+
+all:
+  hosts:
+    localhost:
+      ansible_connection: local
+      ansible_python_interpreter: "{{ansible_playbook_python}}"
+
+      # use_network_name: '<network-name-from-icic>'
+      use_network_name: 'KVM_flat'
+      # use_network_subnet: '<subnet-id-from-network-name-in-icic>'
+      use_network_subnet: 'fd7f0c8d-dfdf-46ee-9b7f-ba7cbce4db4d'
+
+      vm_type: 'kvm'
+      disk_type: 'dasd'
+      # volume_type_id: '<storage-template-id>'
+
+      openshift_version: '4.18'
+      openshift_minor_version: 'latest'
+
+      auto_allocated_ip: true
+      # allocation_pool_start: '<ip range start>'
+      # allocation_pool_end: '<ip range end>'
+      os_flavor_bootstrap: 'medium'
+      os_flavor_master: 'medium'
+      os_flavor_worker: 'medium'
+
+      create_server_zone: ''
+      os_control_nodes_number: 3
+      os_compute_nodes_number: 3
+
+      # os_bootstrap_ip: '<bootstrap ip addr>'
+      # os_master_ip: ['<master0 ip addr>', '<master1 ip addr>', '<master2 ip addr>']
+      # os_infra_ip: ['<infra0 ip addr>', '<infra1 ip addr>', '<infra2 ip addr>']
+
+      use_proxy: false
+      # http_proxy: '<http-proxy>'
+      # https_proxy: '<https-proxy>'
+      # no_proxy: '<no-proxy>'
+
+      use_localreg: false
+      # localreg_mirror: "<local-mirror-registry>"
+
+      # local_openshift_install: '<local-openshift-install-url>'
+      # local_openshift_client: '<local-openshift-client-url>'
+      # local_rhcos_image: '<local-rhcos-image-url>'
+
+      # additional_certs: "{{ lookup('file', '/opt/registry/certs/domain.crt') | indent (width=2) }}"
+      
+      create_server_zone: Default_Group
+
+      create_server_timeout: 10 # minute
+
+    bastion:
+      # ansible_ssh_host: '<linux-server-ip-addr>'
+      ansible_ssh_host: '172.26.100.10'
+      ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+      #bastion_private_ip_address: '<bastion-ip-addr>'
+      bastion_private_ip_address: '172.26.100.10'
+      bastion_public_ip_address: "{{ ansible_default_ipv4.address }}"
+      # dns_forwarder: '<upstream-dns-ip-addr>'
+      dns_forwarder: '172.26.0.1'
+
+  vars:
+    use_internal_bastion: true
+    # os_dns_domain: '<external-dns-ip-addr>'
+    os_dns_domain: '172.26.100.10'
+    # cluster_name: '<cluster-name>'
+    cluster_name: 'dvkvmicic'
+    # base_domain: '<cluster-base-domain>'
+    base_domain: 'ocp.com'
+    # bootstrap_name_prefix: '<bootstrap-node-name>'
+    # master_name_prefix: '<master-node-name>'
+    # worker_name_prefix: '<worker-node-name>'
+    # pullsecret: '<pull-secret>'
+    pullsecret: '{"auths":{"cloud.openshift.com":{"auth":"b3BlbnNoaWZ0LXJlbGVhc2UtZGV2K29jbV9hY2Nlc3NfYzc0ZmFlZGZlMjczNGNhZmE2OTgwZDhhYTUxZmQxNjQ6QlRKQVhWMlRKRTIyTExNMTg3MldDSkpEQ1JZS1ZLQTlGRTEzU1BQN1FZRFlSUE1INjJaWDA4WlRYUFJUVEdFUw==","email":"dibya.raj@ibm.com"},"quay.io":{"auth":"b3BlbnNoaWZ0LXJlbGVhc2UtZGV2K29jbV9hY2Nlc3NfYzc0ZmFlZGZlMjczNGNhZmE2OTgwZDhhYTUxZmQxNjQ6QlRKQVhWMlRKRTIyTExNMTg3MldDSkpEQ1JZS1ZLQTlGRTEzU1BQN1FZRFlSUE1INjJaWDA4WlRYUFJUVEdFUw==","email":"dibya.raj@ibm.com"},"registry.connect.redhat.com":{"auth":"fHVoYy1wb29sLTNiMDE2YWJkLWU1YmYtNGMxZC05YTJiLTE3OTQwOGM3OGQyMjpleUpoYkdjaU9pSlNVelV4TWlKOS5leUp6ZFdJaU9pSmlPREpqWVROaVpHSTJZakEwTTJFNVltSXhOR05rTnpFMVltWXhOek0zTlNKOS52TGx4WUVsQlpfZ0FZMVpQNGt1dS13TGNOSXRuLUs1QTdSVzZHcC1ldE1PazFmV19wUEdScDhXdDR6WnhxZkdjNUlTSW5fQmRpbUoyLU56dndVZWdEVTFrenhzaXNKb2xDeU1pSFFhRVJRQ053MVJLUjF2RVk0Tjk3cGl1eUV3ZXNXWTZEelVQWVJCUGhMRTNuNHRScEVPRERFQmpvZlpqWmRETDdUT2RhdG1WQ01NaFlVbzB3Y3ZpaG1PV1RRMU5ic3Q2ajZ2NW5nN3E5TERrUUxodkY2ZGlJZUJlbHJCd0RfOFBUUDQwZUtsZTFHQTdlY1NENEdIdjM4dDRab2VPaUFSa2I3Sk5ZVV94LTd0WkxMcWhPcHBnWlNsbXBST1dLdERHdmxSQWlvSHBfUHFnaDJibzZsN0NwWFg4cVVhb1RZMDJfMGR6LUlYS2xSM0xScE5HbGFWc3hHcTZTZEQ0aVE3QmYwWHVtNnVraXNHNmM2ZWVMWkxyT2xIZWxtTjZzQ3FLOGVFUkExT0FGWG9RVC11aGh3eFRmaFRjbFozc3I3RnNXeFhFeHEyUWpsRmVwYzJJN1M2ZlF4WWlfVEUwTzhyamtjeURjWHpTVDhJMFFHcng4Smt5bGU5bDd0OGJidEZsVm43c1RSSkVpeHlGOGxyOXFBRzA1a2s0V1E4V1hiUVhPYmlKVnk3MTZIdkg0OU80NGxlRDZtbGswNEZMOUhHYkZVTEhPMGhyUUtNSHpobDBvYURzYmc4TGdVMVl6WlJ1UG5JQVVZTjN6c2l5QmxSd0JmTzhlUlpPaVZNRWw1X2RXYUp0SjBVWlV1aVVoeTNNREdCOEFVVGVSemsyR0JkaWx6LXJfVFhsUEtOT1ExV0NNdzUyWU1BQlI5UjFjVjRmY1ptSmNwRQ==","email":"dibya.raj@ibm.com"},"registry.redhat.io":{"auth":"fHVoYy1wb29sLTNiMDE2YWJkLWU1YmYtNGMxZC05YTJiLTE3OTQwOGM3OGQyMjpleUpoYkdjaU9pSlNVelV4TWlKOS5leUp6ZFdJaU9pSmlPREpqWVROaVpHSTJZakEwTTJFNVltSXhOR05rTnpFMVltWXhOek0zTlNKOS52TGx4WUVsQlpfZ0FZMVpQNGt1dS13TGNOSXRuLUs1QTdSVzZHcC1ldE1PazFmV19wUEdScDhXdDR6WnhxZkdjNUlTSW5fQmRpbUoyLU56dndVZWdEVTFrenhzaXNKb2xDeU1pSFFhRVJRQ053MVJLUjF2RVk0Tjk3cGl1eUV3ZXNXWTZEelVQWVJCUGhMRTNuNHRScEVPRERFQmpvZlpqWmRETDdUT2RhdG1WQ01NaFlVbzB3Y3ZpaG1PV1RRMU5ic3Q2ajZ2NW5nN3E5TERrUUxodkY2ZGlJZUJlbHJCd0RfOFBUUDQwZUtsZTFHQTdlY1NENEdIdjM4dDRab2VPaUFSa2I3Sk5ZVV94LTd0WkxMcWhPcHBnWlNsbXBST1dLdERHdmxSQWlvSHBfUHFnaDJibzZsN0NwWFg4cVVhb1RZMDJfMGR6LUlYS2xSM0xScE5HbGFWc3hHcTZTZEQ0aVE3QmYwWHVtNnVraXNHNmM2ZWVMWkxyT2xIZWxtTjZzQ3FLOGVFUkExT0FGWG9RVC11aGh3eFRmaFRjbFozc3I3RnNXeFhFeHEyUWpsRmVwYzJJN1M2ZlF4WWlfVEUwTzhyamtjeURjWHpTVDhJMFFHcng4Smt5bGU5bDd0OGJidEZsVm43c1RSSkVpeHlGOGxyOXFBRzA1a2s0V1E4V1hiUVhPYmlKVnk3MTZIdkg0OU80NGxlRDZtbGswNEZMOUhHYkZVTEhPMGhyUUtNSHpobDBvYURzYmc4TGdVMVl6WlJ1UG5JQVVZTjN6c2l5QmxSd0JmTzhlUlpPaVZNRWw1X2RXYUp0SjBVWlV1aVVoeTNNREdCOEFVVGVSemsyR0JkaWx6LXJfVFhsUEtOT1ExV0NNdzUyWU1BQlI5UjFjVjRmY1ptSmNwRQ==","email":"dibya.raj@ibm.com"}}}'
+    # sshkey: '<ssh-key>'
+    sshkey: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCo9hqNVn/t+uhS6nupK6SPjomJ8BtnDSckwkjb5atpZnSCIUMnC4e+MGrkboaD+H3InaBC5lo/58QZW3yKw3mpiTfy7DwIfvFb8rRIsabszzV18ViYxinEaKBq0TP0EM4Wr0hTL880sZKq2q58A1FrAmsFK1CYlSzhLMY+J6wDMqCevgjOje1e7BMrz4IvEzBywrG2F3vEXlAbTuBUHoJmQZG44ITFOJtQ1dDCCeZXt2qK+7Bwp2qgU/fOIoOe7nMRAVXANlfFoHzGVwjgTUtOVhZCTGkwGVxrIq3ZBVBOeZKlQShX9j+gRI4TuI4L7cnNVBcyZ2TwUgIU0wBVR+8/sNXcRGn426BEjCowKcs43OQeB1xX7YCMYHOlqzw0ckZZkay8YBlILESwygXwBWBfHmPCfW3SerJXm7PzqZAFewzCdSZFApGuN6hmpMDgUEq7q8rUk3FEGeLmd9W8Gjxwz20MKdwpMQnfCR6OUwBi0MDAn1sr5XtiCOQfo++POfc= root@kvm4ocp10'

@@ -1,0 +1,12 @@
+clouds:
+  devstack:
+    auth:
+      auth_url: https://172.26.3.56:5000/v3
+      domain_name: Default
+      password: dfltpass
+      project_domain_name: Default
+      project_name: ibm-default
+      username: root
+    verify: false
+    compute_api_version: 2.1
+    cacert: /etc/pki/tls/certs/icic.crt

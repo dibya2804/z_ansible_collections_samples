@@ -1,0 +1,39 @@
+- name: Deploy a VM in ICIC
+  hosts: localhost
+  vars:
+    icic_cert: pokicic.crt    
+  tasks:
+    - name: Deploy "{{ vm_name_var }}" from "{{ image_name }}"
+      openstack.cloud.server:
+        ca_cert: "{{ icic_cert }}"
+        cloud: devstack
+        name: "{{ vm_name_var }}"
+        state: present
+        image: "{{ image_name }}"
+        flavor: "{{ vm_flavor }}"
+        volume_size: "{{ volume_size_gb }}"
+        validate_certs: false
+        network: "{{ network_var }}"
+        timeout: 600
+        userdata: |
+          #!/bin/sh
+          systemctl disable firewalld
+          systemctl stop firewalld
+      register: deploy_vm
+
+    - ansible.builtin.debug:
+        msg: "Deployed VMs IP: {{deploy_vm.server.addresses[network_var][0].addr}}"
+
+    - name: Add deployed VM to temp group
+      ansible.builtin.add_host:
+        name: '{{deploy_vm.server.addresses[network_var][0].addr}}'
+        groups: new_vm
+        ansible_transport: ssh
+        ansible_timeout: 300
+
+- name: Access new VM via SSH
+  hosts: new_vm
+  tasks:
+
+    - name: Task 1
+      ansible.builtin.ping:

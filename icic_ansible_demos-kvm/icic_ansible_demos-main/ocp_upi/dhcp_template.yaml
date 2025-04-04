@@ -1,0 +1,22 @@
+static_hosts:
+  master-1:
+    mac: "fa:16:3e:85:33:a0"
+    ip: "172.26.37.201"
+  worker-2:
+    mac: "fa:16:3e:e3:5f:e8"
+    ip: "172.26.37.231"
+  worker-1:
+    mac: "fa:16:3e:12:06:1c"
+    ip: "172.26.37.222"
+  worker-0:
+    mac: "fa:16:3e:2c:c6:0c"
+    ip: "172.26.37.235"
+  master-0:
+    mac: "fa:16:3e:83:f8:2f"
+    ip: "172.26.37.237"
+  bootstrap:
+    mac: "fa:16:3e:d8:95:60"
+    ip: "172.26.37.251"
+  master-2:
+    mac: "fa:16:3e:12:ff:19"
+    ip: "172.26.37.245"

@@ -1,0 +1,95 @@
+# =================================================================
+# Licensed Materials - Property of IBM
+#
+# (c) Copyright IBM Corp. 2021 All Rights Reserved
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+# =================================================================
+
+---
+- name: Install Bastion and Controller OCP Nodes
+  hosts: localhost
+  vars:
+    icic_cert: pokicic.crt
+  environment:
+    OS_CLOUD: devstack
+    OS_CACERT: pokicic.crt
+  tasks:
+
+    - name: Create ocp install files directory if it does not exist
+      ansible.builtin.file:
+        path: /tmp/ocp-install-files
+        state: directory
+        
+    - name: Configure bootstrap zvm
+      ansible.builtin.include_role: 
+        name: configure-bootstrap-zvm
+      when: vm_type == "zvm"
+
+    - name: Configure bootstrap kvm
+      ansible.builtin.include_role: 
+        name: configure-bootstrap-kvm
+      when: vm_type == "kvm"
+
+    - name: Configure control-plane zvm
+      ansible.builtin.include_role: 
+        name: configure-control-plane-zvm
+      when: vm_type == "zvm"
+
+    - name: Configure control-plane kvm
+      ansible.builtin.include_role: 
+        name: configure-control-plane-kvm
+      when: vm_type == "kvm"
+
+    - name: Re-Download openshift installer client to EE
+      ansible.builtin.include_role: 
+        name: configure-installer-client
+      when: use_localreg == false
+
+## Below will need to be restructured - taken from wait-for-bootstrap-complete.yaml
+
+    - name: 'Add DNS {{os_dns_domain}} api.{{ cluster_name }}.{{base_domain}} to /etc/hosts'
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        insertafter: EOF
+        line: '{{os_dns_domain}} api.{{ cluster_name }}.{{base_domain}}'
+
+
+    - name: Wait-for bootstrap-complete
+      ansible.builtin.command: "./openshift-install --dir /tmp/ocp-install-files/auth/ wait-for bootstrap-complete"
+      async: 3600
+      poll: 0
+      register: bootstrap_complete_sleeper
+
+    - name: 'Waiting for bootstrap-complete'
+      ansible.builtin.async_status:
+        jid: "{{ bootstrap_complete_sleeper.ansible_job_id }}"
+      register: job_result
+      until: job_result.finished
+      retries: 120
+      delay: 30
+
+    - name: Check bootstrap log
+      ansible.builtin.shell: 'cat /tmp/ocp-install-files/auth/.openshift_install.log  | grep -A7 "bootstrapping to complete"'
+      register: bootstrap_log
+
+    - name: Show bootstrapping log
+      ansible.builtin.debug:
+        var: bootstrap_log.stdout_lines
+
+## Below will need to be restructured - taken from destroy-bootstrap.yamlS
+
+    - name: 'Import common yaml'
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common.yaml"
+
+    - name: 'Remove the bootstrap server'
+      openstack.cloud.server:
+        name: "{{ os_bootstrap_server_name }}"
+        state: absent
+        delete_fip: true
+        ca_cert: "{{icic_cert}}"
+        cloud: devstack
+
+#- import_playbook: wait-for-bootstrap-complete.yaml
+#- import_playbook: destroy-bootstrap.yaml

@@ -1,0 +1,92 @@
+---
+- name: Prepare for OCP Installation
+  hosts: localhost
+  vars:
+    icic_cert: /etc/pki/tls/certs/icic.crt
+  environment:
+    OS_CLOUD: devstack
+    OS_CACERT: /etc/pki/tls/certs/icic.crt
+  tasks:
+    - name: Configure pre check
+      ansible.builtin.include_role: 
+        name: configure-pre-check
+## Added task to create a new direcory for storing ign, mans, and inst files.
+## Tweaked openstack commands as they werent returning required values.
+
+    - name: Download openshift installer client
+      ansible.builtin.include_role: 
+        name: configure-installer-client
+      when: use_localreg == false
+
+    - name: Download openshift installer client - local
+      ansible.builtin.include_role: 
+        name: configure-installer-client-local
+      when: use_localreg == true
+
+## hardcoded url path to multi-archtecture client to allow ansible node to be any arch.
+
+    - name: Configure install config
+      ansible.builtin.include_role: 
+        name: configure-install-config
+
+## Added a task that copies install-config.yaml to /tmp/ocp-install-files to be able to be used later
+
+    - name: Configure install manifest
+      ansible.builtin.include_role: 
+        name: configure-install-manifests
+
+## Added list command to view generated files
+
+    - name: Configure install ignition
+      ansible.builtin.include_role: 
+        name: configure-install-ignition
+
+## Added list command to view generated files
+## Added a task to copy all generated files to /tmp/ocp-install-files for later use
+
+    - name: Download openshift RHCOS image
+      ansible.builtin.include_role: 
+        name: configure-installer-rhcos
+      when: use_localreg == false
+
+    - name: Download openshift RHCOS image
+      ansible.builtin.include_role: 
+        name: configure-installer-rhcos-local
+      when: use_localreg == true
+
+## Hardcoded s390x in url inplace of ansible_architecture to allow AAP to be on any platform.
+## ** Logic for looking at existing images needs to be revisited, it will continue downloading/uploading new image each time even if one exists
+
+    - name: Configure security groups
+      ansible.builtin.include_role: 
+        name: configure-security-groups
+
+## Added ca_cert and cloud parameters to tasks using openstack ansible module
+
+    - name: Configure network
+      ansible.builtin.include_role: 
+        name: configure-network
+
+## Added ca_cert and cloud parameters to tasks using openstack ansible module
+
+    - name: Configure bastion properties
+      ansible.builtin.include_role: 
+        name: configure-bastion-properties
+
+
+    - name: Show all Files that may have been generated
+      ansible.builtin.shell: 'ls -la'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
